@@ -1,206 +1,281 @@
-#define _CRT_SECURE_NO_WARNINGS
+#include <iostream>
+#include <string>
+#include <vector>
+#include <fstream>
+#include <stack>
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-
-class bufferclass {
+class FileClass {
 public:
-    bufferclass() {
-        buffer = (char**)malloc(initial_lines * sizeof(char*));
-        for (size_t i = 0; i < initial_lines; i++)
-        {
-            buffer[i] = (char*)malloc(initial_symbols * sizeof(char));
-            buffer[i][0] = '\0';
+    FileClass(const std::string& fileName) : file_name(fileName) {}
+
+    std::string file_name;
+};
+
+class FileActions {
+public:
+    FileActions() {
+    } 
+
+    void read_from_file(const FileClass& fileN) {
+        std::cout << "You chose read from file option." << std::endl;
+        std::ifstream file(fileN.file_name);
+        if (!file.is_open()) {
+            std::cout << "Error opening file." << std::endl;
         }
-    }
-    void append() {
-        printf("You chose append option.\n");
-        int add_size = 200;
-        char* text_to_append = (char*)malloc(add_size * sizeof(char));
-        fgets(text_to_append, add_size, stdin);
-        size_t textadd_length = strlen(text_to_append);
-        size_t line_length = strlen(buffer[current_line]);
-        if (text_to_append[textadd_length - 1] == '\n') text_to_append[textadd_length - 1] = '\0';
-        if (line_length + textadd_length + 1 > initial_symbols) {
-            initial_symbols *= 2;
-            buffer[current_line] = (char*)realloc(buffer[current_line], initial_symbols * sizeof(char));
-            line_length = strlen(buffer[current_line]);
-        }
-        strcat(buffer[current_line], text_to_append);
-    }
-    void new_line() {
-        printf("You chose add line option.\n");
-        strcat(buffer[current_line], "\n");
-        current_line++;
-        if (current_line == initial_lines) {
-            initial_lines *= 2;
-            char** buffer = (char**)malloc(initial_lines * sizeof(char*));
-            for (size_t i = 0; i < initial_lines; i++)
-            {
-                buffer[i] = (char*)malloc(initial_symbols * sizeof(char));
-                buffer[i][0] = '\0';
+        else {
+            std::string line;
+            while (std::getline(file, line)) {
+                std::cout << line << std::endl;
             }
-        }
-    }
-    void output() {
-        printf("You chose output option.\n");
-        for (size_t i = 0; i < initial_lines; i++)
-        {
-            if (buffer[i][0] != '\0') {
-                printf("%s", buffer[i]);
-            }
+            file.close();
         }
     }
 
-    void read_from_file() {
-        printf("You chose read from file option.\n");
-        FILE* file;
-        char mystring[1000];
-        file = fopen("MyFile.txt", "r");
-        if (file == NULL)
-        {
-            printf("Error opening file");
-        }
-        else
-        {
-            while (fgets(mystring, sizeof(mystring), file)) {
-
-                printf("%s", mystring);
-            }
-            fclose(file);
-        }
-    }
-    void save_in_file() {
-        printf("You chose write in file option.\n");
-        FILE* file;
-        file = fopen("myfile.txt", "w");
-        if (file != NULL)
-        {
-            for (size_t i = 0; i < initial_lines; i++)
-            {
-                if (buffer[i][0] != '\0') {
-                    fputs(buffer[i], file);
+    void save_in_file(const FileClass& fileN, const std::vector<std::string>& buffer) {
+        std::cout << "You chose write in file option." << std::endl;
+        std::ofstream file(fileN.file_name);
+        if (file.is_open()) {
+            for (const auto& line : buffer) {
+                if (!line.empty()) {
+                    file << line;
                 }
             }
-            fclose(file);
+            file.close();
         }
     }
 
-    void search_in_file() {
+    void search_in_file(const FileClass& fileN) {
         printf("You chose find text in file option.\n");
-        FILE* file;
+        std::ifstream file(fileN.file_name);
+        std::string line;
+        std::string substring;
 
-        char substring[100];
-        char text_line[1000];
-        int line_pos = 0;
-        int symbol_pos = 0;
-
+        int row = 0;
         printf("Enter the substring to search for: ");
-        fgets(substring, sizeof(substring), stdin);
-        size_t substring_length = strlen(substring);
-        if (substring[substring_length - 1] == '\n') substring[substring_length - 1] = '\0';
-        file = fopen("myfile.txt", "r");
-        if (file == NULL) {
-            printf("Error opening file");
-        }
-        while (fgets(text_line, sizeof(text_line), file)) {
-            char* symbol_pos = text_line;
-            while ((symbol_pos = strstr(symbol_pos, substring))) {
-                printf("Found at position: %d %d\n", line_pos, symbol_pos - text_line);
-                symbol_pos++;
+        std::cin >> substring;
+
+        while (std::getline(file, line)) {
+            int col = 0;
+            size_t index = 0;
+
+            while ((index = line.find(substring, index)) != std::string::npos) {
+                std::cout << "Row: " << row << ", Column: " << col + index << std::endl;
+                index += substring.length();
             }
-            line_pos++;
+
+            row++;
         }
 
-        fclose(file);
+        file.close();
     }
-private:
+};
 
+class BufferClass {
+public:
+    BufferClass() {
+        undo_stack.push(buffer);
+    }
+    void undo() {
+        if (undo_stack.size() < 2) {
+            std::cout << "Undo is not available." << std::endl;
+            return;
+        }
+
+        redo_stack.push(buffer);
+        buffer = undo_stack.top();
+        undo_stack.pop();
+    }
+
+    void redo() {
+        if (redo_stack.empty()) {
+            std::cout << "Redo is not available." << std::endl;
+            return;
+        }
+
+
+        undo_stack.push(buffer);
+
+        buffer = redo_stack.top();
+        redo_stack.pop();
+    }
+
+    const std::vector<std::string>& getBuffer() const {
+        return buffer;
+    }
+
+    void append() {
+        std::cout << "You chose append option." << std::endl;
+        std::string text_to_append;
+        std::getline(std::cin, text_to_append);
+        undo_stack.push(buffer);
+        buffer.push_back(text_to_append);
+    }
+
+    void new_line() {
+        std::cout << "You chose add line option." << std::endl;
+        buffer.push_back("\n");
+        current_line++;
+    }
+
+    void output() {
+        for (int i = 0; i < buffer.size(); i++)
+        {
+            std::cout << buffer[i] << std::endl;;
+        }
+    }
+
+    void deleteFunc() {
+        std::cout << "You chose delete option." << std::endl;
+        int row;
+        int index;
+        int num_of_symb;
+
+        std::cout << "Enter the row number: ";
+        std::cin >> row;
+
+        std::cout << "Enter the column number: ";
+        std::cin >> index;
+
+        std::cout << "Enter the number of symbols to delete: ";
+        std::cin >> num_of_symb;
+
+        undo_stack.push(buffer);
+
+        buffer[row].erase(index, num_of_symb);
+
+    }
+
+    void copy() {
+        std::cout << "You chose copy option." << std::endl;
+        int row;
+        int index;
+        int num_of_symb;
+
+        std::cout << "Enter the row number: ";
+        std::cin >> row;
+
+        std::cout << "Enter the column number: ";
+        std::cin >> index;
+
+        std::cout << "Enter the number of symbols to copy: ";
+        std::cin >> num_of_symb;
+
+        clipboard = buffer[row].substr(index, num_of_symb);
+        
+    }
+
+    void cut() {
+        std::cout << "You chose cut option." << std::endl;
+        int row;
+        int index;
+        int num_of_symb;
+
+        std::cout << "Enter the row number: ";
+        std::cin >> row;
+
+        std::cout << "Enter the column number: ";
+        std::cin >> index;
+
+        std::cout << "Enter the number of symbols to cut: ";
+        std::cin >> num_of_symb;
+
+            clipboard = buffer[row].substr(index, num_of_symb);
+            undo_stack.push(buffer);
+            buffer[row].erase(index, num_of_symb);
+        
+    }
+
+    void paste() {
+        std::cout << "You chose paste option." << std::endl;
+        int row;
+        int index;
+        int num_of_symb;
+
+        std::cout << "Enter the row number: ";
+        std::cin >> row;
+
+        std::cout << "Enter the column number: ";
+        std::cin >> index;
+        undo_stack.push(buffer);
+        buffer[row].insert(index, clipboard);
+        
+    }
+
+private:
     int initial_lines = 20;
     int initial_symbols = 50;
     int current_line = 0;
-    char** buffer = NULL;
+    std::vector<std::string> buffer;
+    std::string clipboard;
+    std::stack<std::vector<std::string>> undo_stack;
+    std::stack<std::vector<std::string>> redo_stack; 
 };
-
-
-
-
-
-
-
-
-
-
-
 
 void clear_console() {
     system("cls");
-    printf("You chose clear console option.\n");
+    std::cout << "You chose clear console option." << std::endl;
 }
 
 int main() {
-    bufferclass buffer;
-
+    BufferClass buffer;
+    std::string fileName = "myfile.txt";
+    FileClass file(fileName);
+    FileActions fileActions; 
     int loop = 1;
     int choice;
 
-
     while (loop) {
-
-        printf("\nEnter a number (1-8): ");
-        scanf("%d", &choice);
-        getchar();
+        std::cout << "\nEnter a number (1-8): ";
+        std::cin >> choice;
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
         switch (choice) {
         case 1:
-        {
             buffer.append();
             break;
-        }
         case 2:
-        {
             buffer.new_line();
             break;
-        }
         case 3:
-        {
             buffer.output();
             break;
-        }
         case 4:
-        {
-            buffer.save_in_file();
+            fileActions.save_in_file(file, buffer.getBuffer());
             break;
-        }
         case 5:
-        {
-            buffer.read_from_file();
+            fileActions.read_from_file(file);
             break;
-
-        }
         case 6:
-        {
-            buffer.search_in_file();
+            fileActions.search_in_file(file); 
             break;
-
-        }
         case 7:
-        {
-            printf("You chose nonexistent insert function.\n");
+            std::cout << "You chose nonexistent insert function." << std::endl;
             break;
-        }
         case 8:
-        {
+            buffer.deleteFunc();
+            break;
+        case 9:
+            buffer.undo();
+            break;
+        case 10:
+            buffer.redo();
+            break;
+        case 11:
+            buffer.copy();
+            break;
+        case 12:
+            buffer.cut();
+            break;
+        case 13:
+            buffer.paste();
+            break;
+        case 15:
             clear_console();
             break;
-        }
         default:
-            printf("Invalid choice.\n");
+            std::cout << "Invalid choice." << std::endl;
             break;
         }
-
     }
     return 0;
 }
