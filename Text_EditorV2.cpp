@@ -145,6 +145,62 @@ public:
 
     }
 
+    void copy() {
+        std::cout << "You chose copy option." << std::endl;
+        int row;
+        int index;
+        int num_of_symb;
+
+        std::cout << "Enter the row number: ";
+        std::cin >> row;
+
+        std::cout << "Enter the column number: ";
+        std::cin >> index;
+
+        std::cout << "Enter the number of symbols to copy: ";
+        std::cin >> num_of_symb;
+
+        clipboard = buffer[row].substr(index, num_of_symb);
+        
+    }
+
+    void cut() {
+        std::cout << "You chose cut option." << std::endl;
+        int row;
+        int index;
+        int num_of_symb;
+
+        std::cout << "Enter the row number: ";
+        std::cin >> row;
+
+        std::cout << "Enter the column number: ";
+        std::cin >> index;
+
+        std::cout << "Enter the number of symbols to cut: ";
+        std::cin >> num_of_symb;
+
+            clipboard = buffer[row].substr(index, num_of_symb);
+            undo_stack.push(buffer);
+            buffer[row].erase(index, num_of_symb);
+        
+    }
+
+    void paste() {
+        std::cout << "You chose paste option." << std::endl;
+        int row;
+        int index;
+        int num_of_symb;
+
+        std::cout << "Enter the row number: ";
+        std::cin >> row;
+
+        std::cout << "Enter the column number: ";
+        std::cin >> index;
+        undo_stack.push(buffer);
+        buffer[row].insert(index, clipboard);
+        
+    }
+
 private:
     int initial_lines = 20;
     int initial_symbols = 50;
@@ -197,6 +253,21 @@ int main() {
             break;
         case 8:
             buffer.deleteFunc();
+            break;
+        case 9:
+            buffer.undo();
+            break;
+        case 10:
+            buffer.redo();
+            break;
+        case 11:
+            buffer.copy();
+            break;
+        case 12:
+            buffer.cut();
+            break;
+        case 13:
+            buffer.paste();
             break;
         case 15:
             clear_console();
