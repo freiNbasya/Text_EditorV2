@@ -76,6 +76,7 @@ public:
         undo_stack.push(buffer);
     }
     void undo() {
+        std::cout << "You chose undo option." << std::endl;
         if (undo_stack.size() < 2) {
             std::cout << "Undo is not available." << std::endl;
             return;
@@ -87,6 +88,7 @@ public:
     }
 
     void redo() {
+        std::cout << "You chose redo option." << std::endl;
         if (redo_stack.empty()) {
             std::cout << "Redo is not available." << std::endl;
             return;
@@ -94,7 +96,6 @@ public:
 
 
         undo_stack.push(buffer);
-
         buffer = redo_stack.top();
         redo_stack.pop();
     }
@@ -109,12 +110,6 @@ public:
         std::getline(std::cin, text_to_append);
         undo_stack.push(buffer);
         buffer.push_back(text_to_append);
-    }
-
-    void new_line() {
-        std::cout << "You chose add line option." << std::endl;
-        buffer.push_back("\n");
-        current_line++;
     }
 
     void output() {
@@ -179,9 +174,11 @@ public:
         std::cout << "Enter the number of symbols to cut: ";
         std::cin >> num_of_symb;
 
-            clipboard = buffer[row].substr(index, num_of_symb);
-            undo_stack.push(buffer);
-            buffer[row].erase(index, num_of_symb);
+        clipboard = buffer[row].substr(index, num_of_symb);
+
+        undo_stack.push(buffer);
+        
+        buffer[row].erase(index, num_of_symb);
         
     }
 
@@ -196,9 +193,36 @@ public:
 
         std::cout << "Enter the column number: ";
         std::cin >> index;
+
         undo_stack.push(buffer);
+
+
         buffer[row].insert(index, clipboard);
         
+    }
+
+    void replace() {
+        std::cout << "You chose replace option." << std::endl;
+        int row;
+        int index;
+        int num_of_symb;
+
+        std::cout << "Enter the text to add: ";
+
+        std::string text_to_replace;
+        std::getline(std::cin, text_to_replace);
+
+        std::cout << "Enter the row number: ";
+        std::cin >> row;
+
+        std::cout << "Enter the column number: ";
+        std::cin >> index;
+
+        undo_stack.push(buffer);
+
+        buffer[row].erase(index, text_to_replace.size());
+        buffer[row].insert(index, text_to_replace);
+
     }
 
 private:
@@ -218,14 +242,13 @@ void clear_console() {
 
 int main() {
     BufferClass buffer;
-    std::string fileName = "myfile.txt";
-    FileClass file(fileName);
+    FileClass file("myfile.txt");
     FileActions fileActions; 
     int loop = 1;
     int choice;
 
     while (loop) {
-        std::cout << "\nEnter a number (1-8): ";
+        std::cout << "\nEnter a number (1-14): ";
         std::cin >> choice;
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
@@ -234,7 +257,7 @@ int main() {
             buffer.append();
             break;
         case 2:
-            buffer.new_line();
+            std::cout << "No." << std::endl;
             break;
         case 3:
             buffer.output();
@@ -268,6 +291,9 @@ int main() {
             break;
         case 13:
             buffer.paste();
+            break;
+        case 14:
+            buffer.replace();
             break;
         case 15:
             clear_console();
