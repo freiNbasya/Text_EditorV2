@@ -1,8 +1,101 @@
+#define NOMINMAX
 #include <iostream>
 #include <string>
 #include <vector>
 #include <fstream>
 #include <stack>
+#include "Dll1.h"
+#include <windows.h>
+
+
+
+class Dll1 {
+public:
+    typedef std::string(*encrypt_ptr_t)(std::string, int);
+    typedef std::string(*decrypt_ptr_t)(std::string, int);
+    HINSTANCE handle;
+    decrypt_ptr_t decrypt_ptr;
+    encrypt_ptr_t encrypt_ptr;
+    Dll1() : handle(nullptr), decrypt_ptr(nullptr), encrypt_ptr(nullptr) {
+        handle = LoadLibrary(TEXT("Dll1.dll"));
+        if (handle != nullptr || handle != INVALID_HANDLE_VALUE) {
+            decrypt_ptr = (decrypt_ptr_t)GetProcAddress(handle, "decrypt");
+            encrypt_ptr = (encrypt_ptr_t)GetProcAddress(handle, "encrypt");
+        }
+    }
+    ~Dll1() {
+        FreeLibrary(handle);
+    }
+
+    std::string decrypt(std::string text, int key) {
+        if (decrypt_ptr == nullptr)
+        {
+            return "Function not found";
+        }
+        return decrypt_ptr(text, key);
+    }
+
+    std::string encrypt(std::string text, int key) {
+
+        if (encrypt_ptr == nullptr)
+        {
+            return "Function not found";
+        }
+        return encrypt_ptr(text, key);
+    }
+};
+
+class FileRW {
+public:
+    Dll1 cipher;
+    std::vector<std::string> bufferD;
+    std::vector<std::string> bufferE;
+    void Read(std::string command, std::string name, int key) {
+        std::string newLine;
+        std::ifstream file(name);
+        if (!file.is_open()) {
+            std::cout << "File not found" << std::endl;
+        }
+        if (command == "15") {
+            while (getline(file, newLine)) {
+                newLine = cipher.decrypt(newLine, key);
+                bufferD.push_back(newLine);
+            }
+        }
+        if (command == "16") {
+            while (getline(file, newLine)) {
+                newLine = cipher.encrypt(newLine, key);
+                bufferE.push_back(newLine);
+            }
+        }
+        file.close();
+
+    }
+
+    void Write(std::string command, std::string name) {
+        std::ofstream file(name);
+        if (!file.is_open()) {
+            std::cout << "File not found" << std::endl;
+        }
+        if (command == "15") {
+            for (size_t i = 0; i < bufferD.size(); i++)
+            {
+                file << bufferD[i] << std::endl;
+            }
+            bufferD.clear();
+        }
+        if (command == "16") {
+            for (size_t i = 0; i < bufferE.size(); i++)
+            {
+                file << bufferE[i] << std::endl;
+            }
+            bufferE.clear();
+        }
+        file.close();
+    }
+
+
+};
 
 class FileClass {
 public:
@@ -243,10 +336,11 @@ void clear_console() {
 int main() {
     BufferClass buffer;
     FileClass file("myfile.txt");
-    FileActions fileActions; 
+    FileActions fileActions;
+    FileRW cipher;
     int loop = 1;
     int choice;
-
+    int key;
     while (loop) {
         std::cout << "\nEnter a number (1-14): ";
         std::cin >> choice;
@@ -296,6 +390,20 @@ int main() {
             buffer.replace();
             break;
         case 15:
+            std::cin >> key;
+            cipher.Read("15", "C:/Labs_Kse/Paradigms of Programming/Text_EditorV2/myfile.txt", key);
+            break;
+        case 16:
+            std::cin >> key;
+            cipher.Read("16", "C:/Labs_Kse/Paradigms of Programming/Text_EditorV2/myfile.txt", key);
+            break;
+        case 17:
+            cipher.Write("15", "C:/Labs_Kse/Paradigms of Programming/Text_EditorV2/myfile.txt");
+            break;
+        case 18:
+            cipher.Write("16", "C:/Labs_Kse/Paradigms of Programming/Text_EditorV2/myfile.txt");
+            break;
+        case 19:
             clear_console();
             break;
         default:
